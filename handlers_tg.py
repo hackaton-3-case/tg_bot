@@ -6,11 +6,11 @@ from aiogram.types import Message
 from aiogram.filters.command import CommandStart
 from aiogram import Bot
 
-from tg_bot.keyboards import reply_keyboards as keys
+from keyboards import reply_keyboards as keys
 
-from tg_bot.data.config import token_tg
-from tg_bot.model import dboperaations
-from tg_bot.model.dboperaations import volunteers_indexes
+from data.config import token_tg
+from model import dboperaations
+from model.dboperaations import volunteers_indexes
 
 bot = Bot(token=token_tg)
 router = Router()

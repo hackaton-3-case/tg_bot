@@ -1,8 +1,8 @@
 from aiogram import types
 import asyncio
-from tg_bot.model import dboperaations
-from tg_bot.model.dboperaations import volunteers_indexes
-from tg_bot.keyboards import reply_keyboards as keys
+from model import dboperaations
+from model.dboperaations import volunteers_indexes
+from keyboards import reply_keyboards as keys
 
 
 async def main_menu(message):
