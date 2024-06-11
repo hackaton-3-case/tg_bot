@@ -81,7 +81,7 @@ async def handover_foods(message: Message):
 
 
 @router.message(F.text == 'Сдать на склад')
-async def take_foods(message: Message):
+async def put_away(message: Message):
     if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await message.answer('...меню ввода количества и фотоотчета...')
     else:
@@ -89,7 +89,7 @@ async def take_foods(message: Message):
 
 
 @router.message(F.text == 'Карточка волонтёра')
-async def take_foods(message: Message):
+async def volunteer_profile(message: Message):
     if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await message.answer('...карточка + (инлайн) опции модерирования подручных животных...')
     else:
@@ -97,7 +97,7 @@ async def take_foods(message: Message):
 
 
 @router.message(F.text == 'Список точек')
-async def take_foods(message: Message):
+async def points_list(message: Message):
     if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await message.answer('...меню крайпака...')
     else:
