@@ -62,7 +62,6 @@ async def get_user_data(tgId):
         answer = await conn.fetch(f"SELECT * FROM volunteers WHERE telegram_id={tgId}")
         if len(answer) != 0:
             await conn.close()
-            print(answer)
             return answer[0]
         else:
             await conn.close()
@@ -74,28 +73,13 @@ async def get_user_data(tgId):
 
 async def set_user_state(tgId, new_state):
     try:
-        conn = await asyncpg.connect('postgres://postgres:popa123@31.128.37.138:5432/tg_bot_test')
-        answer = await conn.fetch(f'SELECT * FROM users WHERE id={tgId}')
+        conn = await asyncpg.connect('postgres://postgres:popa123@31.128.37.138:5432/nakormi_telegram_bot')
+        answer = await conn.fetch(f'SELECT * FROM volunteers WHERE telegram_id={tgId}')
         if len(answer) != 0:
-            await conn.execute(f"UPDATE users SET state = '{new_state}' WHERE id = {tgId}")
+            await conn.execute(f"UPDATE volunteers SET state = '{new_state}' WHERE telegram_id = {tgId}")
             return 'Done'
         else:
             await conn.close()
             return 'User not exists'
     except Exception as e:
         return f'Exception: {str(e)}'
-
-
-async def set_user_balance(tgId, new_balance):
-    try:
-        conn = await asyncpg.connect('postgres://postgres:popa123@31.128.37.138:5432/tg_bot_test')
-        answer = await conn.fetch(f'SELECT * FROM users WHERE id={tgId}')
-        if len(answer) != 0:
-            await conn.execute(f"UPDATE users SET balance = {new_balance} WHERE id = {tgId}")
-            return 'Done'
-        else:
-            await conn.close()
-            return 'User not exists'
-    except Exception as e:
-        return f'Exception: {str(e)}'
-
