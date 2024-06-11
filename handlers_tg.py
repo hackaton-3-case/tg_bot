@@ -6,9 +6,11 @@ from aiogram.types import Message
 from aiogram.filters.command import CommandStart
 from aiogram import Bot
 
-from keyboards import reply_keyboards as keys
+from keyboards import reply_keyboards as reply_keys
+from keyboards import inline_keyboards as inline_keys
 
 from data.config import token_tg
+import operations
 from model import dboperaations
 from model.dboperaations import volunteers_indexes
 
@@ -16,7 +18,7 @@ bot = Bot(token=token_tg)
 router = Router()
 
 state_keys = {
-    '{main_menu}': keys.main_key,
+    '{main_menu}': reply_keys.main_key,
     '{waiting_state1}': types.ReplyKeyboardRemove,
 }
 
@@ -44,7 +46,7 @@ async def cmd_start(message: Message):
                 token = hashlib.md5(text[1].encode()).hexdigest()
                 if (await dboperaations.authorize_user(message.from_user.id, token)) == 'Done':
                     user_data = await dboperaations.get_user_data(message.from_user.id)
-                    await message.answer(f'Здравствуйте, {user_data[volunteers_indexes['fio']]}, вы в главном меню!', reply_markup=keys.main_key)
+                    await message.answer(f'Здравствуйте, {user_data[volunteers_indexes['fio']]}, вы в главном меню!', reply_markup=reply_keys.main_key)
                 else:
                     await message.answer('Неверный ключ доступа, попробуйте еще раз.')
             else:
@@ -57,7 +59,7 @@ async def cmd_start(message: Message):
 
 
 @router.message(F.text == 'Взять корм')
-async def take_foods(message: Message):
+async def take_foods_bt(message: Message):
     if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await message.answer('...меню выбора откуда...')
     else:
@@ -65,7 +67,7 @@ async def take_foods(message: Message):
 
 
 @router.message(F.text == 'Реализовать корм')
-async def realise_foods(message: Message):
+async def realise_foods_bt(message: Message):
     if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await message.answer('...меню введения количества и фотоотчета...')
     else:
@@ -73,7 +75,7 @@ async def realise_foods(message: Message):
 
 
 @router.message(F.text == 'Передать корм')
-async def handover_foods(message: Message):
+async def handover_foods_bt(message: Message):
     if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await message.answer('...меню ввода количества, айди чела и фотоотчета...')
     else:
@@ -81,7 +83,7 @@ async def handover_foods(message: Message):
 
 
 @router.message(F.text == 'Сдать на склад')
-async def put_away(message: Message):
+async def put_away_bt(message: Message):
     if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await message.answer('...меню ввода количества и фотоотчета...')
     else:
@@ -89,17 +91,25 @@ async def put_away(message: Message):
 
 
 @router.message(F.text == 'Карточка волонтёра')
-async def volunteer_profile(message: Message):
+async def volunteer_profile_bt(message: Message):
     if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
-        await message.answer('...карточка + (инлайн) опции модерирования подручных животных...')
+        await operations.volunteer_profile(message)
     else:
         await message.answer('Используйте кнопки!')
 
 
 @router.message(F.text == 'Список точек')
-async def points_list(message: Message):
+async def points_list_bt(message: Message):
     if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await message.answer('...меню крайпака...')
+    else:
+        await message.answer('Используйте кнопки!')
+
+
+@router.message(F.text.lower() == 'выход')
+async def points_list_bt(message: Message):
+    if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{volunteer_profile_menu}':
+        await operations.main_menu(message)
     else:
         await message.answer('Используйте кнопки!')
 

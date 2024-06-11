@@ -2,12 +2,15 @@ import asyncio
 import logging
 from aiogram import Bot, Dispatcher
 import asyncpg
+
+import dboperaations
 import handlers_tg
 from data.config import token_tg
 
 
 async def main():
     #print(await dboperaations.register_user('Sergey Oreshkin', '+79160019293', 'rggr@gmail.com', '123456:7890'))
+    await dboperaations.set_user_state(876545829, '{main_menu}')
     bot = Bot(token=token_tg)
     dp = Dispatcher()
     dp.include_router(handlers_tg.router)
