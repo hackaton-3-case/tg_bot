@@ -1,0 +1,9 @@
+### Example user template template
+### Example user template
+
+# IntelliJ project files
+config.py
+.idea
+*.iml
+out
+gen
