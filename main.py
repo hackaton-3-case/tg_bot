@@ -3,8 +3,7 @@ import logging
 from aiogram import Bot, Dispatcher
 import asyncpg
 import handlers_tg
-from config import token_tg
-import dboperaations
+from tg_bot.data.config import token_tg
 
 
 async def main():

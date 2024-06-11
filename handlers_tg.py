@@ -1,19 +1,16 @@
-import asyncio
 import logging
 import hashlib
 import time
 from aiogram import F, Router, types
-from aiogram.types import Message, CallbackQuery, InputFile
-from aiogram.filters.command import Command, CommandStart
+from aiogram.types import Message
+from aiogram.filters.command import CommandStart
 from aiogram import Bot
-from aiogram.types import FSInputFile, InputMediaDocument, InputMediaPhoto
 
-import key_tg as keys
-from aiogram.methods import send_message, send_document
+from tg_bot.keyboards import reply_keyboards as keys
 
-from config import token_tg
-import dboperaations, operations
-from dboperaations import volunteers_indexes
+from tg_bot.data.config import token_tg
+from tg_bot.model import dboperaations
+from tg_bot.model.dboperaations import volunteers_indexes
 
 bot = Bot(token=token_tg)
 router = Router()
