@@ -11,8 +11,8 @@ from keyboards import inline_keyboards as inline_keys
 
 from data.config import token_tg
 import operations
-from model import dboperaations
-from model.dboperaations import volunteers_indexes
+from model import dboperations
+from model.dboperations import volunteers_indexes
 
 bot = Bot(token=token_tg)
 router = Router()
@@ -34,23 +34,18 @@ def timer(func):
 
 
 async def get_state_keyboard(tgId):
-    return state_keys[(await dboperaations.get_user_data(tgId))[volunteers_indexes['state']]]
+    return state_keys[(await dboperations.get_user_data(tgId))[volunteers_indexes['state']]]
 
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
     try:
-        if (await dboperaations.get_user_data(message.from_user.id)) == 'User not exists':
-            text = message.text.split()
-            if len(text) == 2:
-                token = hashlib.md5(text[1].encode()).hexdigest()
-                if (await dboperaations.authorize_user(message.from_user.id, token)) == 'Done':
-                    user_data = await dboperaations.get_user_data(message.from_user.id)
-                    await message.answer(f'Здравствуйте, {user_data[volunteers_indexes['fio']]}, вы в главном меню!', reply_markup=reply_keys.main_key)
-                else:
-                    await message.answer('Неверный ключ доступа, попробуйте еще раз.')
+        if (await dboperations.get_user_data(message.from_user.id)) == 'User not exists':
+            user_data = await dboperations.get_user_data(0, message.from_user.username)
+            if (await dboperations.authorize_user(message.from_user.username, message.from_user.id)) != 'User not exists':
+                await message.answer(f'Здравствуйте, {user_data[volunteers_indexes['fio']]}, вы в главном меню!', reply_markup=reply_keys.main_key)
             else:
-                await message.answer('Пожалуйста, воспользуйтесь ссылкой от администратора бота. Если переходя по ней вы видите это сообщение - авторизуйтесь вручную командой /start + ключ_доступа,\nнапример: /start authkey123')
+                await message.answer('Вы не зарегистрированы в системе бота, подайте заявку на нашем сайте /../ и ожидайте предоставления доступа. Если вы меняли юзернейм в Telegram - верните старый и авторизуйтесь в боте или подайте заявку заново.')
         else:
             await message.answer('Вы уже авторизованы в боте, пожалуйста используйте кнопки!')
     except Exception as e:
@@ -60,7 +55,7 @@ async def cmd_start(message: Message):
 
 @router.message(F.text == 'Взять корм')
 async def take_foods_bt(message: Message):
-    if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
+    if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await message.answer('...меню выбора откуда...')
     else:
         await message.answer('Используйте кнопки!')
@@ -68,7 +63,7 @@ async def take_foods_bt(message: Message):
 
 @router.message(F.text == 'Реализовать корм')
 async def realise_foods_bt(message: Message):
-    if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
+    if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await message.answer('...меню введения количества и фотоотчета...')
     else:
         await message.answer('Используйте кнопки!')
@@ -76,7 +71,7 @@ async def realise_foods_bt(message: Message):
 
 @router.message(F.text == 'Передать корм')
 async def handover_foods_bt(message: Message):
-    if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
+    if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await message.answer('...меню ввода количества, айди чела и фотоотчета...')
     else:
         await message.answer('Используйте кнопки!')
@@ -84,7 +79,7 @@ async def handover_foods_bt(message: Message):
 
 @router.message(F.text == 'Сдать на склад')
 async def put_away_bt(message: Message):
-    if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
+    if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await message.answer('...меню ввода количества и фотоотчета...')
     else:
         await message.answer('Используйте кнопки!')
@@ -92,7 +87,7 @@ async def put_away_bt(message: Message):
 
 @router.message(F.text == 'Карточка волонтёра')
 async def volunteer_profile_bt(message: Message):
-    if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
+    if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await operations.volunteer_profile(message)
     else:
         await message.answer('Используйте кнопки!')
@@ -100,7 +95,7 @@ async def volunteer_profile_bt(message: Message):
 
 @router.message(F.text == 'Список точек')
 async def points_list_bt(message: Message):
-    if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
+    if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
         await message.answer('...меню крайпака...')
     else:
         await message.answer('Используйте кнопки!')
@@ -108,7 +103,7 @@ async def points_list_bt(message: Message):
 
 @router.message(F.text.lower() == 'выход')
 async def points_list_bt(message: Message):
-    if (await dboperaations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{volunteer_profile_menu}':
+    if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{volunteer_profile_menu}':
         await operations.main_menu(message)
     else:
         await message.answer('Используйте кнопки!')
@@ -116,7 +111,7 @@ async def points_list_bt(message: Message):
 
 @router.message()
 async def another_message(message: Message):
-    state = await dboperaations.get_user_data(message.from_user.id)
+    state = await dboperations.get_user_data(message.from_user.id)
     if state[volunteers_indexes['state']] == "{waiting_state1}":
         try:
             pass
