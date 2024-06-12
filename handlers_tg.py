@@ -2,10 +2,11 @@ import logging
 import hashlib
 import time
 from aiogram import F, Router, types
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram.filters.command import CommandStart
 from aiogram import Bot
 
+import dboperaations
 from keyboards import reply_keyboards as reply_keys
 from keyboards import inline_keyboards as inline_keys
 
@@ -19,7 +20,17 @@ router = Router()
 
 state_keys = {
     '{main_menu}': reply_keys.main_key,
-    '{waiting_state1}': types.ReplyKeyboardRemove,
+    '{volunteer_profile_menu}': reply_keys.exit_key,
+    '{add_pet_menu:type}': reply_keys.cat_or_dog_key,
+    '{add_pet_menu:sex}': reply_keys.male_or_female_key,
+    '{add_pet_menu:sterialized}': reply_keys.sterialized_key,
+    '{add_pet_menu:town}': reply_keys.moscow_or_mo_key,
+    '{add_pet_menu:district}': reply_keys.exit_key,
+    '{add_pet_menu:name}': reply_keys.exit_key
+}
+
+temp_data = {
+    'district': '0'
 }
 
 
@@ -93,6 +104,75 @@ async def volunteer_profile_bt(message: Message):
         await message.answer('Используйте кнопки!')
 
 
+@router.message(F.data == '{add_pet}')
+async def yes(callback: CallbackQuery):
+    user_data = await dboperaations.get_user_data(callback.from_user.id)
+    if user_data[volunteers_indexes['state']] == "{volunteer_profile_menu}":
+        await dboperaations.set_user_state(callback.from_user.id, '{add_pet_menu:type}')
+        await callback.message.answer("Укажите, какого питомца вы хотите добавить:", reply_markup=reply_keys.cat_or_dog_key)
+    else:
+        await callback.answer('Сообщение больше не актуально, вернитесь в раздел карточки волонтёра.')
+
+
+@router.message(F.text.lower().in_({'собака', 'кошка'}))
+async def points_list_bt(message: Message):
+    user_data = await dboperaations.get_user_data(message.from_user.id)
+    if user_data[volunteers_indexes['state']] == "{add_pet_menu:type}":
+        temp_data['type'] = message.text
+        await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:sex}')
+        await message.answer('Укажите пол питомца', reply_markup=reply_keys.male_or_female_key)
+    else:
+        await message.answer('Используйте кнопки!')
+
+
+@router.message(F.text.lower().in_({'мальчик', 'девочка'}))
+async def points_list_bt(message: Message):
+    user_data = await dboperaations.get_user_data(message.from_user.id)
+    if user_data[volunteers_indexes['state']] == "{add_pet_menu:sex}":
+        temp_data['sex'] = message.text
+        await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:sterialized}')
+        await message.answer('Стерилен ли ваш питомец?', reply_markup=reply_keys.sterialized_key)
+    else:
+        await message.answer('Используйте кнопки!')
+
+
+@router.message(F.text.lower().in_({'стерилен', 'не стерилен'}))
+async def points_list_bt(message: Message):
+    user_data = await dboperaations.get_user_data(message.from_user.id)
+    if user_data[volunteers_indexes['state']] == "{add_pet_menu:sterialized}":
+        temp_data['sterialized'] = message.text
+        await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:town}')
+        await message.answer('Питомец проживает в Москве или в МО?', reply_markup=reply_keys.moscow_or_mo_key)
+    else:
+        await message.answer('Используйте кнопки!')
+
+
+@router.message(F.text.lower().in_({'москва', 'московская область'}))
+async def points_list_bt(message: Message):
+    user_data = await dboperaations.get_user_data(message.from_user.id)
+    if user_data[volunteers_indexes['state']] == "{add_pet_menu:sex}":
+        temp_data['town'] = 'Москва' if message.text == 'Москва' else 'МО'
+        if message.text == 'Москва':
+            await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:district}')
+            await message.answer('Введите район Москвы:', reply_markup=reply_keys.exit_key)
+        else:
+            await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:name}')
+            await message.answer('Введите имя питомца:', reply_markup=reply_keys.exit_key)
+    else:
+        await message.answer('Используйте кнопки!')
+
+
+@router.message(F.text.lower().in_({'мальчик', 'девочка'}))
+async def points_list_bt(message: Message):
+    user_data = await dboperaations.get_user_data(message.from_user.id)
+    if user_data[volunteers_indexes['state']] == "{add_pet_menu:sex}":
+        temp_data['sex'] = f'{message.text}'
+        await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:sterialized}')
+        await message.answer('Стерилен ли ваш питомец?', reply_markup=reply_keys.male_or_female_key)
+    else:
+        await message.answer('Используйте кнопки!')
+
+
 @router.message(F.text == 'Список точек')
 async def points_list_bt(message: Message):
     if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
@@ -103,8 +183,11 @@ async def points_list_bt(message: Message):
 
 @router.message(F.text.lower() == 'выход')
 async def points_list_bt(message: Message):
-    if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{volunteer_profile_menu}':
+    state = await dboperations.get_user_data(message.from_user.id)[volunteers_indexes['state']]
+    if state == '{volunteer_profile_menu}':
         await operations.main_menu(message)
+    elif state.startswith('{add_pet_menu'):
+        await operations.volunteer_profile(message)
     else:
         await message.answer('Используйте кнопки!')
 
@@ -112,11 +195,20 @@ async def points_list_bt(message: Message):
 @router.message()
 async def another_message(message: Message):
     state = await dboperations.get_user_data(message.from_user.id)
-    if state[volunteers_indexes['state']] == "{waiting_state1}":
+    if state[volunteers_indexes['state']] == "{add_pet_menu:district}":
         try:
-            pass
+            temp_data['district'] = message.text
+            await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:name}')
+            await message.answer('Введите имя питомца:', reply_markup=reply_keys.exit_key)
         except Exception as e:
             logging.info(f'exception in {__name__}: ' + str(e))
-            await message.answer('Говно ты ввёл, еще раз')
+            await message.answer('Попробуйте еще раз')
+    elif state[volunteers_indexes['state']] == "{add_pet_menu:name}":
+        try:
+            temp_data['name'] = message.text
+            await operations.volunteer_profile(message)
+        except Exception as e:
+            logging.info(f'exception in {__name__}: ' + str(e))
+            await message.answer('Попробуйте еще раз')
     else:
         await message.answer(f'Используйте кнопки!', reply_markup=await get_state_keyboard(message.from_user.id))

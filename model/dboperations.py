@@ -13,8 +13,21 @@ volunteers_indexes = {
     'pets': 8,
     'foods': 9,
     'realised': 10,
-    'telegram_shortname': 11
+    'telegram_shortname': 11,
+    'pet_ids': 12
 }
+
+pets_indexes = {
+    'pet_id': 0,
+    'type': 1,
+    'name': 2,
+    'town': 3,
+    'district': 4,
+    'sex': 5,
+    'sterialised': 6,
+    'volunteer_id': 7
+}
+
 
 async def register_user(shortname, fio, phone, email, passport_data='нет информации'):
     try:
@@ -23,7 +36,8 @@ async def register_user(shortname, fio, phone, email, passport_data='нет ин
         json_foods = json.dumps({'cats_dry': 0, 'cats_wet': 0, 'dogs_dry': 0, 'dogs_wet': 0})
         json_realised = json.dumps({'cats_realised': 0, 'dogs_realised': 0})
         state = '{not_authorized}'
-        await conn.execute(f"INSERT INTO volunteers (telegram_id, fio, status, state, phone, email, passport_data, pets, foods, realised, telegram_shortname) VALUES (0, '{fio}', 0, '{state}', '{phone}', '{email}', '{passport_data}', '{json_pets}', '{json_foods}', '{json_realised}', '{shortname}')")
+        pet_ids = '{}'
+        await conn.execute(f"INSERT INTO volunteers (telegram_id, fio, status, state, phone, email, passport_data, pets, foods, realised, telegram_shortname, pet_ids) VALUES (0, '{fio}', 0, '{state}', '{phone}', '{email}', '{passport_data}', '{json_pets}', '{json_foods}', '{json_realised}', '{shortname}', '{pet_ids}')")
         await conn.close()
         return [fio, f't.me/{shortname}']
     except Exception as e:
