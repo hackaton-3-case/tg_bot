@@ -28,7 +28,7 @@ male_or_female_key = ReplyKeyboardMarkup(keyboard=[
 )
 
 sterialized_key = ReplyKeyboardMarkup(keyboard=[
-    [KeyboardButton(text='стерильный'), KeyboardButton(text='не стерильный')],
+    [KeyboardButton(text='стерилен'), KeyboardButton(text='не стерилен')],
     [KeyboardButton(text='выход')]],
     resize_keyboard=True
 )

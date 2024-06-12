@@ -21,8 +21,8 @@ async def main():
 
 async def run():
     conn = await asyncpg.connect('postgres://postgres:popa123@31.128.37.138:5432/nakormi_telegram_bot')
-    #await conn.execute("DROP TABLE volunteers")
-    #answer = await conn.execute('CREATE TABLE pets (pet_id INTEGER PRIMARY KEY, type VARCHAR(10), name VARCHAR(100), town VARCHAR(100), district VARCHAR(100), sex VARCHAR(30), sterialised BOOLEAN, volunteer_id INTEGER)')
+    #await conn.execute("DROP TABLE pets")
+    #answer = await conn.execute('CREATE TABLE pets (pet_id SERIAL PRIMARY KEY, type VARCHAR(10), name VARCHAR(100), town VARCHAR(100), district VARCHAR(100), sex VARCHAR(30), sterialised BOOLEAN, volunteer_id INTEGER)')
     #answer = await conn.execute('ALTER TABLE volunteers ALTER COLUMN telegram_id TYPE BIGINT')
     answer = await dboperations.get_user_data(876545829)
     print(answer)

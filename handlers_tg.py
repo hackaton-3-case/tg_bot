@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import hashlib
 import time
@@ -6,7 +7,6 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters.command import CommandStart
 from aiogram import Bot
 
-import dboperaations
 from keyboards import reply_keyboards as reply_keys
 from keyboards import inline_keyboards as inline_keys
 
@@ -30,7 +30,7 @@ state_keys = {
 }
 
 temp_data = {
-    'district': '0'
+    'district': 'None'
 }
 
 
@@ -58,7 +58,7 @@ async def cmd_start(message: Message):
             else:
                 await message.answer('Вы не зарегистрированы в системе бота, подайте заявку на нашем сайте /../ и ожидайте предоставления доступа. Если вы меняли юзернейм в Telegram - верните старый и авторизуйтесь в боте или подайте заявку заново.')
         else:
-            await message.answer('Вы уже авторизованы в боте, пожалуйста используйте кнопки!')
+            await message.answer('Вы уже авторизованы в боте, пожалуйста используйте кнопки!', reply_markup=await get_state_keyboard(message.from_user.id))
     except Exception as e:
         print(str(e))
         await message.answer('Неизвестная ошибка, попробуйте еще раз или свяжитесь с администратором.')
@@ -104,71 +104,64 @@ async def volunteer_profile_bt(message: Message):
         await message.answer('Используйте кнопки!')
 
 
-@router.message(F.data == '{add_pet}')
-async def yes(callback: CallbackQuery):
-    user_data = await dboperaations.get_user_data(callback.from_user.id)
+@router.callback_query(F.data == '{add_pet}')
+async def add_pet(callback: CallbackQuery):
+    user_data = await dboperations.get_user_data(callback.from_user.id)
     if user_data[volunteers_indexes['state']] == "{volunteer_profile_menu}":
-        await dboperaations.set_user_state(callback.from_user.id, '{add_pet_menu:type}')
+        print(await dboperations.set_user_state(callback.from_user.id, '{add_pet_menu:type}'))
         await callback.message.answer("Укажите, какого питомца вы хотите добавить:", reply_markup=reply_keys.cat_or_dog_key)
     else:
         await callback.answer('Сообщение больше не актуально, вернитесь в раздел карточки волонтёра.')
 
 
 @router.message(F.text.lower().in_({'собака', 'кошка'}))
-async def points_list_bt(message: Message):
-    user_data = await dboperaations.get_user_data(message.from_user.id)
+async def cat_or_dog(message: Message):
+    global temp_data
+    user_data = await dboperations.get_user_data(message.from_user.id)
     if user_data[volunteers_indexes['state']] == "{add_pet_menu:type}":
         temp_data['type'] = message.text
-        await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:sex}')
+        await dboperations.set_user_state(message.from_user.id, '{add_pet_menu:sex}')
         await message.answer('Укажите пол питомца', reply_markup=reply_keys.male_or_female_key)
     else:
         await message.answer('Используйте кнопки!')
 
 
 @router.message(F.text.lower().in_({'мальчик', 'девочка'}))
-async def points_list_bt(message: Message):
-    user_data = await dboperaations.get_user_data(message.from_user.id)
+async def pet_sex(message: Message):
+    global temp_data
+    user_data = await dboperations.get_user_data(message.from_user.id)
     if user_data[volunteers_indexes['state']] == "{add_pet_menu:sex}":
         temp_data['sex'] = message.text
-        await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:sterialized}')
+        await dboperations.set_user_state(message.from_user.id, '{add_pet_menu:sterialized}')
         await message.answer('Стерилен ли ваш питомец?', reply_markup=reply_keys.sterialized_key)
     else:
         await message.answer('Используйте кнопки!')
 
 
 @router.message(F.text.lower().in_({'стерилен', 'не стерилен'}))
-async def points_list_bt(message: Message):
-    user_data = await dboperaations.get_user_data(message.from_user.id)
+async def pet_sterialized(message: Message):
+    global temp_data
+    user_data = await dboperations.get_user_data(message.from_user.id)
     if user_data[volunteers_indexes['state']] == "{add_pet_menu:sterialized}":
         temp_data['sterialized'] = message.text
-        await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:town}')
+        await dboperations.set_user_state(message.from_user.id, '{add_pet_menu:town}')
         await message.answer('Питомец проживает в Москве или в МО?', reply_markup=reply_keys.moscow_or_mo_key)
     else:
         await message.answer('Используйте кнопки!')
 
 
 @router.message(F.text.lower().in_({'москва', 'московская область'}))
-async def points_list_bt(message: Message):
-    user_data = await dboperaations.get_user_data(message.from_user.id)
-    if user_data[volunteers_indexes['state']] == "{add_pet_menu:sex}":
+async def moscow_or_mo(message: Message):
+    global temp_data
+    user_data = await dboperations.get_user_data(message.from_user.id)
+    if user_data[volunteers_indexes['state']] == "{add_pet_menu:town}":
         temp_data['town'] = 'Москва' if message.text == 'Москва' else 'МО'
         if message.text == 'Москва':
-            await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:district}')
+            await dboperations.set_user_state(message.from_user.id, '{add_pet_menu:district}')
             await message.answer('Введите район Москвы:', reply_markup=reply_keys.exit_key)
         else:
-            await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:name}')
+            await dboperations.set_user_state(message.from_user.id, '{add_pet_menu:name}')
             await message.answer('Введите имя питомца:', reply_markup=reply_keys.exit_key)
-    else:
-        await message.answer('Используйте кнопки!')
-
-
-@router.message(F.text.lower().in_({'мальчик', 'девочка'}))
-async def points_list_bt(message: Message):
-    user_data = await dboperaations.get_user_data(message.from_user.id)
-    if user_data[volunteers_indexes['state']] == "{add_pet_menu:sex}":
-        temp_data['sex'] = f'{message.text}'
-        await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:sterialized}')
-        await message.answer('Стерилен ли ваш питомец?', reply_markup=reply_keys.male_or_female_key)
     else:
         await message.answer('Используйте кнопки!')
 
@@ -182,11 +175,15 @@ async def points_list_bt(message: Message):
 
 
 @router.message(F.text.lower() == 'выход')
-async def points_list_bt(message: Message):
-    state = await dboperations.get_user_data(message.from_user.id)[volunteers_indexes['state']]
+async def exit_message(message: Message):
+    global temp_data
+    state = (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']]
     if state == '{volunteer_profile_menu}':
         await operations.main_menu(message)
     elif state.startswith('{add_pet_menu'):
+        temp_data = {
+            'district': 'None'
+        }
         await operations.volunteer_profile(message)
     else:
         await message.answer('Используйте кнопки!')
@@ -194,21 +191,34 @@ async def points_list_bt(message: Message):
 
 @router.message()
 async def another_message(message: Message):
+    global temp_data
     state = await dboperations.get_user_data(message.from_user.id)
     if state[volunteers_indexes['state']] == "{add_pet_menu:district}":
         try:
             temp_data['district'] = message.text
-            await dboperaations.set_user_state(message.from_user.id, '{add_pet_menu:name}')
+            await dboperations.set_user_state(message.from_user.id, '{add_pet_menu:name}')
             await message.answer('Введите имя питомца:', reply_markup=reply_keys.exit_key)
+
         except Exception as e:
             logging.info(f'exception in {__name__}: ' + str(e))
             await message.answer('Попробуйте еще раз')
     elif state[volunteers_indexes['state']] == "{add_pet_menu:name}":
         try:
             temp_data['name'] = message.text
-            await operations.volunteer_profile(message)
+            new_pet = await dboperations.new_pet(message.from_user.id, temp_data['type'], temp_data['name'], temp_data['sex'], temp_data['sterialized'], message.from_user.id, temp_data['town'], temp_data['district'])
+            if new_pet == 'Done':
+                temp_data = {
+                    'district': 'None'
+                }
+                await operations.volunteer_profile(message)
+            else:
+                raise Exception
         except Exception as e:
             logging.info(f'exception in {__name__}: ' + str(e))
-            await message.answer('Попробуйте еще раз')
+            await message.answer('Произошла ошибка при регистрации питомца, попробуйте еще раз.')
+            temp_data = {
+                'district': 'None'
+            }
+            await operations.volunteer_profile(message)
     else:
         await message.answer(f'Используйте кнопки!', reply_markup=await get_state_keyboard(message.from_user.id))

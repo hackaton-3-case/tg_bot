@@ -1,4 +1,6 @@
 import json
+
+import asyncio
 import asyncpg
 
 volunteers_indexes = {
@@ -91,4 +93,22 @@ async def set_user_state(tgId, new_state):
             await conn.close()
             return 'User not exists'
     except Exception as e:
+        return f'Exception: {str(e)}'
+
+
+async def new_pet(tgId, type, name, sex, sterialised, volunteer_id, town, district):
+    try:
+        sterialised = True if sterialised == 'стерилен' else False
+        conn = await asyncpg.connect('postgres://postgres:popa123@31.128.37.138:5432/nakormi_telegram_bot')
+        pets = (await conn.fetch(f"SELECT * FROM volunteers WHERE telegram_id={tgId}"))[0][volunteers_indexes['pets']]
+        pets = json.loads(pets)
+        pets['cats' if type == 'кошка' else 'dogs'] += 1
+        pets = json.dumps(pets)
+        pet_id = (await conn.fetch(f"INSERT INTO pets (type, name, town, district, sex, sterialised, volunteer_id) VALUES ('{type}', '{name.capitalize()}', '{town}', '{district.capitalize()}', '{sex}', {sterialised}, {volunteer_id}) RETURNING pet_id"))[0][0]
+        await conn.execute(f"UPDATE volunteers SET pet_ids = ARRAY_APPEND(pet_ids, {pet_id}), pets = '{pets}' WHERE telegram_id={tgId}")
+        await conn.close()
+        return 'Done'
+    except Exception as e:
+        print(str(e))
+        await conn.close()
         return f'Exception: {str(e)}'
