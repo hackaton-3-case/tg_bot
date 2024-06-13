@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 import re
@@ -25,6 +26,9 @@ state_keys = {
     '{main_menu}': reply_keys.main_key,
     '{admin_main_menu}': reply_keys.admin_main_key,
     '{admin_menu}': reply_keys.admin_key,
+    '{admin_manage_menu}': reply_keys.admin_manage_key,
+    '{change_stock_menu}': reply_keys.choose_foods_key,
+    '{enter_foods_menu}': reply_keys.exit_key,
     '{volunteer_profile_menu}': reply_keys.exit_key,
     '{register_volunteer_menu:name}': reply_keys.exit_key,
     '{register_volunteer_menu:phone}': reply_keys.exit_key,
@@ -45,6 +49,14 @@ temp_pet_data = {
 }
 
 temp_volunteer_data = {}
+temp_foods_type = ''
+
+food_types = {
+    'Сухой корм для собак': 'dogs_dry',
+    'Влажный корм для собак': 'dogs_wet',
+    'Сухой корм для кошек': 'cats_dry',
+    'Влажный корм для кошек': 'cats_wet'
+}
 
 
 def timer(func):
@@ -120,6 +132,51 @@ async def register_volunteer(message: Message):
             await dboperations.set_user_state(message.from_user.id, '{register_volunteer_menu:name}')
             await message.answer("Укажите имя и фамилию волонтёра:",
                                           reply_markup=reply_keys.exit_key)
+        else:
+            await message.answer('Используйте кнопки!')
+    except Exception as e:
+        print(str(e))
+        await message.answer(text=strings.unknown_error)
+
+
+@router.message(F.text == 'Управление')
+async def admin_manage_bt(message: Message):
+    try:
+        user_data = await dboperations.get_user_data(message.from_user.id)
+        if user_data[volunteers_indexes['state']] == '{admin_menu}' and user_data[volunteers_indexes['status']] == 1:
+            await operations.admin_manage_menu(message)
+        else:
+            await message.answer('Используйте кнопки!')
+    except Exception as e:
+        print(str(e))
+        await message.answer(text=strings.unknown_error)
+
+
+@router.message(F.text == 'Изменить содержимое склада')
+async def change_stock(message: Message):
+    try:
+        user_data = await dboperations.get_user_data(message.from_user.id)
+        if user_data[volunteers_indexes['state']] == '{admin_manage_menu}' and user_data[volunteers_indexes['status']] == 1:
+            stock_data = await dboperations.get_user_data(0)
+            stock_foods = json.loads(stock_data[volunteers_indexes['foods']])
+            await dboperations.set_user_state(message.from_user.id, '{change_stock_menu}')
+            await message.answer(f'Сейчас на складе:\n\n{stock_foods['dogs_dry']}кг сухого корма для собак\n{stock_foods['dogs_wet']}кг влажного корма для собак\n{stock_foods['cats_dry']}кг сухого корма для кошек\n{stock_foods['cats_wet']}кг влажного корма для кошек\n\nВыберите какой пункт хотите изменить:', reply_markup=reply_keys.choose_foods_key)
+        else:
+            await message.answer('Используйте кнопки!')
+    except Exception as e:
+        print(str(e))
+        await message.answer(text=strings.unknown_error)
+
+
+@router.message(F.text.in_({'Сухой корм для собак', 'Влажный корм для собак', 'Сухой корм для кошек', 'Влажный корм для кошек'}))
+async def what_foods(message: Message):
+    try:
+        global temp_foods_type
+        user_data = await dboperations.get_user_data(message.from_user.id)
+        if user_data[volunteers_indexes['state']] == '{change_stock_menu}' and user_data[volunteers_indexes['status']] == 1:
+            temp_foods_type = message.text
+            await dboperations.set_user_state(message.from_user.id, '{enter_foods_menu}')
+            await message.answer('Введите новое значение в [кг]:', reply_markup=reply_keys.exit_key)
         else:
             await message.answer('Используйте кнопки!')
     except Exception as e:
@@ -329,6 +386,8 @@ async def exit_message(message: Message):
         elif state.startswith('{register_volunteer_menu:') and status == 1:
             temp_volunteer_data = {}
             await operations.admin_menu(message)
+        elif state in ('{enter_foods_menu}', '{change_stock_menu}'):
+            await operations.admin_manage_menu(message)
         else:
             await message.answer('Используйте кнопки!')
     except Exception as e:
@@ -419,6 +478,26 @@ async def another_message(message: Message):
                 await dboperations.set_user_state(message.from_user.id, '{register_volunteer_menu:final}')
                 await message.answer(f"Информация о новом волонтёре:\n\nИмя - {temp_volunteer_data['name']}\nТелефон - {temp_volunteer_data['phone']}\nЭлектронная почта - {temp_volunteer_data['email']}\nСсылка на телеграм - t.me/{temp_volunteer_data['shortname']}\nКомментарий: {temp_volunteer_data['comment']}\n\nВсё верно?",
                                      reply_markup=reply_keys.all_good_or_not_key)
+            else:
+                await message.answer('Используйте кнопки!')
+        elif user_data[volunteers_indexes['state']] == '{enter_foods_menu}':
+            global temp_foods_type
+            if user_data[volunteers_indexes['status']] == 1:
+                stock_data = await dboperations.get_user_data(0)
+                stock_foods = json.loads(stock_data[volunteers_indexes['foods']])
+                try:
+                    stock_foods[food_types[temp_foods_type]] = float(message.text)
+                    stock_foods = json.dumps(stock_foods)
+                    change_foods = await dboperations.set_user_foods(0, stock_foods)
+                    if change_foods == 'Done':
+                        await message.answer(f"Данные изменены!")
+                        await operations.admin_manage_menu(message)
+                    else:
+                        print(change_foods)
+                        await message.answer(strings.unknown_error)
+                        await operations.admin_manage_menu(message)
+                except:
+                    await message.answer('Неверное количество корма, введите заново:')
             else:
                 await message.answer('Используйте кнопки!')
         else:

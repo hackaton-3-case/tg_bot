@@ -123,6 +123,21 @@ async def set_user_state(tgId, new_state):
         return f'Exception: {str(e)}'
 
 
+async def set_user_foods(tgId, foods):
+    try:
+        conn = await asyncpg.connect(url)
+        answer = await conn.fetch(f'SELECT * FROM volunteers WHERE telegram_id={tgId}')
+        if len(answer) != 0:
+            await conn.execute(f"UPDATE volunteers SET foods = '{foods}' WHERE telegram_id = {tgId}")
+            return 'Done'
+        else:
+            await conn.close()
+            return 'User not exists'
+    except Exception as e:
+        print(e)
+        return f'Exception: {str(e)}'
+
+
 async def new_pet(tgId, pet_type, name, sex, sterialised, volunteer_id, town, district):
     """
     The function create a new pet in database

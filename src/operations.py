@@ -63,3 +63,12 @@ async def admin_menu(message) -> None:
     else:
         await message.answer(f'Произошла неизвестная ошибка/вы не авторизованы в системе - напишите /start',
                              reply_markup=types.ReplyKeyboardRemove())
+
+
+async def admin_manage_menu(message) -> None:
+    state_change = await dboperations.set_user_state(message.from_user.id, '{admin_manage_menu}')
+    if state_change == 'Done':
+        await message.answer('Раздел управления и статистики:', reply_markup=reply_keys.admin_manage_key)
+    else:
+        await message.answer(f'Произошла неизвестная ошибка/вы не авторизованы в системе - напишите /start',
+                             reply_markup=types.ReplyKeyboardRemove())

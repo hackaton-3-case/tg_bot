@@ -27,11 +27,32 @@ admin_main_key = ReplyKeyboardMarkup(keyboard=[
 admin_key = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='Назначить админа точки'), KeyboardButton(text='Добавление точки')],
     [KeyboardButton(text='Назначить старшего волонтёра'), KeyboardButton(text='Назначить админа бота')],
-    [KeyboardButton(text='Регистрация волонтёра'), KeyboardButton(text='Статистика')],
+    [KeyboardButton(text='Регистрация волонтёра'), KeyboardButton(text='Управление')],
     [KeyboardButton(text='выход')]
     ],
     resize_keyboard=True,
     input_field_placeholder="Админское меню:"
+)
+
+admin_manage_key = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Изменить содержимое склада')],
+    [KeyboardButton(text='Сводка по районам'), KeyboardButton(text='Сводка по складу')],
+    [KeyboardButton(text='Информация о передачах корма'), KeyboardButton(text='Информация о заборах/выгрузках корма')],
+    [KeyboardButton(text='выход')]
+    ],
+    resize_keyboard=True,
+    input_field_placeholder="Админское меню управления:"
+)
+
+choose_foods_key = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Сухой корм для собак')],
+    [KeyboardButton(text='Влажный корм для собак')],
+    [KeyboardButton(text='Сухой корм для кошек')],
+    [KeyboardButton(text='Влажный корм для кошек')],
+    [KeyboardButton(text='выход')]
+    ],
+    resize_keyboard=True,
+    input_field_placeholder="Выберите тип корма:"
 )
 
 all_good_or_not_key = ReplyKeyboardMarkup(keyboard=[
