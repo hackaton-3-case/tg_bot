@@ -1,6 +1,6 @@
 import json
 
-import asyncio
+from src.data.config import url
 import asyncpg
 
 volunteers_indexes = {
@@ -21,7 +21,7 @@ volunteers_indexes = {
 
 pets_indexes = {
     'pet_id': 0,
-    'type': 1,
+    'pet_type': 1,
     'name': 2,
     'town': 3,
     'district': 4,
@@ -32,14 +32,23 @@ pets_indexes = {
 
 
 async def register_user(shortname, fio, phone, email, passport_data='нет информации'):
+    """
+    :param shortname: telegram shortname (link to profile)
+    :param fio: full name
+    :param phone: phone number
+    :param email: email address
+    :param passport_data: passport data
+    :return: add user to database and welcome to the bot
+    """
     try:
-        conn = await asyncpg.connect('postgres://postgres:popa123@31.128.37.138:5432/nakormi_telegram_bot')
+        conn = await asyncpg.connect(url)
         json_pets = json.dumps({'cats': 0, 'dogs': 0})
         json_foods = json.dumps({'cats_dry': 0, 'cats_wet': 0, 'dogs_dry': 0, 'dogs_wet': 0})
         json_realised = json.dumps({'cats_realised': 0, 'dogs_realised': 0})
         state = '{not_authorized}'
         pet_ids = '{}'
-        await conn.execute(f"INSERT INTO volunteers (telegram_id, fio, status, state, phone, email, passport_data, pets, foods, realised, telegram_shortname, pet_ids) VALUES (0, '{fio}', 0, '{state}', '{phone}', '{email}', '{passport_data}', '{json_pets}', '{json_foods}', '{json_realised}', '{shortname}', '{pet_ids}')")
+        await conn.execute(f"INSERT INTO volunteers (telegram_id, fio, status, state, phone, email, passport_data, pets, foods, realised, telegram_shortname, pet_ids) "
+                           f"VALUES (0, '{fio}', 0, '{state}', '{phone}', '{email}', '{passport_data}', '{json_pets}', '{json_foods}', '{json_realised}', '{shortname}', '{pet_ids}')")
         await conn.close()
         return [fio, f't.me/{shortname}']
     except Exception as e:
@@ -49,8 +58,13 @@ async def register_user(shortname, fio, phone, email, passport_data='нет ин
 
 
 async def authorize_user(shortname, tgId):
+    """
+    :param shortname: telegram shortname (link to profile)
+    :param tgId: telegram id (the user's unique number)
+    :return: if user is found - 'Done'. else - 'User not exists'
+    """
     try:
-        conn = await asyncpg.connect('postgres://postgres:popa123@31.128.37.138:5432/nakormi_telegram_bot')
+        conn = await asyncpg.connect(url)
         if len(await conn.fetch(f"SELECT * FROM volunteers WHERE telegram_shortname='{shortname}'")) != 0:
             state = '{main_menu}'
             await conn.execute(f"UPDATE volunteers SET telegram_id={tgId}, state='{state}' WHERE telegram_shortname='{shortname}'")
@@ -65,8 +79,13 @@ async def authorize_user(shortname, tgId):
 
 
 async def get_user_data(tgId, username=None):
+    """
+    The function returns a coroutine with information about the user
+    :param tgId: telegram id (the user's unique number)
+    :param username: telegram shortname (link to profile)
+    """
     try:
-        conn = await asyncpg.connect('postgres://postgres:popa123@31.128.37.138:5432/nakormi_telegram_bot')
+        conn = await asyncpg.connect(url)
         if username is None:
             answer = await conn.fetch(f"SELECT * FROM volunteers WHERE telegram_id={tgId}")
         else:
@@ -83,8 +102,14 @@ async def get_user_data(tgId, username=None):
 
 
 async def set_user_state(tgId, new_state):
+    """
+    The function set new user state
+    :param tgId: telegram id (the user's unique number)
+    :param new_state: new state of the user
+    :return: if user is found - 'Done'. else - 'User not exists'
+    """
     try:
-        conn = await asyncpg.connect('postgres://postgres:popa123@31.128.37.138:5432/nakormi_telegram_bot')
+        conn = await asyncpg.connect(url)
         answer = await conn.fetch(f'SELECT * FROM volunteers WHERE telegram_id={tgId}')
         if len(answer) != 0:
             await conn.execute(f"UPDATE volunteers SET state = '{new_state}' WHERE telegram_id = {tgId}")
@@ -96,15 +121,26 @@ async def set_user_state(tgId, new_state):
         return f'Exception: {str(e)}'
 
 
-async def new_pet(tgId, type, name, sex, sterialised, volunteer_id, town, district):
+async def new_pet(tgId, pet_type, name, sex, sterialised, volunteer_id, town, district):
+    """
+    The function create a new pet in database
+    :param tgId: telegram id (the user's unique number)
+    :param pet_type: cat or dog
+    :param name: pet name
+    :param sex: pet sex
+    :param sterialised: yes or no
+    :param volunteer_id: telegram id (the user's unique number)
+    :param town: the city where the pet is located
+    :param district: district where the pet is located
+    """
     try:
         sterialised = True if sterialised == 'стерилен' else False
-        conn = await asyncpg.connect('postgres://postgres:popa123@31.128.37.138:5432/nakormi_telegram_bot')
+        conn = await asyncpg.connect(url)
         pets = (await conn.fetch(f"SELECT * FROM volunteers WHERE telegram_id={tgId}"))[0][volunteers_indexes['pets']]
         pets = json.loads(pets)
-        pets['cats' if type == 'кошка' else 'dogs'] += 1
+        pets['cats' if pet_type == 'кошка' else 'dogs'] += 1
         pets = json.dumps(pets)
-        pet_id = (await conn.fetch(f"INSERT INTO pets (type, name, town, district, sex, sterialised, volunteer_id) VALUES ('{type}', '{name.capitalize()}', '{town}', '{district.capitalize()}', '{sex}', {sterialised}, {volunteer_id}) RETURNING pet_id"))[0][0]
+        pet_id = (await conn.fetch(f"INSERT INTO pets (pet_type, name, town, district, sex, sterialised, volunteer_id) VALUES ('{pet_type}', '{name.capitalize()}', '{town}', '{district.capitalize()}', '{sex}', {sterialised}, {volunteer_id}) RETURNING pet_id"))[0][0]
         await conn.execute(f"UPDATE volunteers SET pet_ids = ARRAY_APPEND(pet_ids, {pet_id}), pets = '{pets}' WHERE telegram_id={tgId}")
         await conn.close()
         return 'Done'

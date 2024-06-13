@@ -2,7 +2,6 @@
 ### Example user template
 
 # IntelliJ project files
-data/config.py
 .idea
 *.iml
 out

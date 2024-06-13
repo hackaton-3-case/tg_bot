@@ -4,7 +4,7 @@ from aiogram import Bot, Dispatcher
 import asyncpg
 
 import handlers_tg
-from data.config import token_tg
+from src.data.config import token_tg, url
 from model import dboperations
 
 
@@ -20,9 +20,9 @@ async def main():
 
 
 async def run():
-    conn = await asyncpg.connect('postgres://postgres:popa123@31.128.37.138:5432/nakormi_telegram_bot')
+    conn = await asyncpg.connect(url)
     #await conn.execute("DROP TABLE pets")
-    #answer = await conn.execute('CREATE TABLE pets (pet_id SERIAL PRIMARY KEY, type VARCHAR(10), name VARCHAR(100), town VARCHAR(100), district VARCHAR(100), sex VARCHAR(30), sterialised BOOLEAN, volunteer_id INTEGER)')
+    #answer = await conn.execute('CREATE TABLE pets (pet_id SERIAL PRIMARY KEY, pet_type VARCHAR(10), name VARCHAR(100), town VARCHAR(100), district VARCHAR(100), sex VARCHAR(30), sterialised BOOLEAN, volunteer_id INTEGER)')
     #answer = await conn.execute('ALTER TABLE volunteers ALTER COLUMN telegram_id TYPE BIGINT')
     answer = await dboperations.get_user_data(876545829)
     print(answer)
@@ -30,7 +30,6 @@ async def run():
 
 if __name__ == '__main__':
     try:
-
         logging.basicConfig(level=logging.WARNING)
         #logging.basicConfig(level=logging.INFO, filename="logs.log", filemode="w",
         #                    format="%(asctime)s %(levelname)s %(message)s", encoding='UTF-8')

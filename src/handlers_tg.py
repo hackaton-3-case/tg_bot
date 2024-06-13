@@ -1,19 +1,17 @@
-import asyncio
 import logging
-import hashlib
 import time
-from aiogram import F, Router, types
+from aiogram import F, Router
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters.command import CommandStart
 from aiogram import Bot
 
 from keyboards import reply_keyboards as reply_keys
-from keyboards import inline_keyboards as inline_keys
 
-from data.config import token_tg
+from src.data.config import token_tg
 import operations
 from model import dboperations
 from model.dboperations import volunteers_indexes
+import src.label.strings as strings
 
 bot = Bot(token=token_tg)
 router = Router()
@@ -21,7 +19,7 @@ router = Router()
 state_keys = {
     '{main_menu}': reply_keys.main_key,
     '{volunteer_profile_menu}': reply_keys.exit_key,
-    '{add_pet_menu:type}': reply_keys.cat_or_dog_key,
+    '{add_pet_menu:pet_type}': reply_keys.cat_or_dog_key,
     '{add_pet_menu:sex}': reply_keys.male_or_female_key,
     '{add_pet_menu:sterialized}': reply_keys.sterialized_key,
     '{add_pet_menu:town}': reply_keys.moscow_or_mo_key,
@@ -45,6 +43,11 @@ def timer(func):
 
 
 async def get_state_keyboard(tgId):
+    """
+    :param tgId: The Telegram ID of the user.
+    :return: The keyboard layout (likely a list of buttons or commands) corresponding to the user's current state.
+    """
+
     return state_keys[(await dboperations.get_user_data(tgId))[volunteers_indexes['state']]]
 
 
@@ -56,17 +59,18 @@ async def cmd_start(message: Message):
             if (await dboperations.authorize_user(message.from_user.username, message.from_user.id)) != 'User not exists':
                 await message.answer(f'Здравствуйте, {user_data[volunteers_indexes['fio']]}, вы в главном меню!', reply_markup=reply_keys.main_key)
             else:
-                await message.answer('Вы не зарегистрированы в системе бота, подайте заявку на нашем сайте /../ и ожидайте предоставления доступа. Если вы меняли юзернейм в Telegram - верните старый и авторизуйтесь в боте или подайте заявку заново.')
+                await message.answer(text=strings.start_msg)
         else:
-            await message.answer('Вы уже авторизованы в боте, пожалуйста используйте кнопки!', reply_markup=await get_state_keyboard(message.from_user.id))
+            await message.answer(text=strings.already_register, reply_markup=await get_state_keyboard(message.from_user.id))
     except Exception as e:
         print(str(e))
-        await message.answer('Неизвестная ошибка, попробуйте еще раз или свяжитесь с администратором.')
+        await message.answer(text=strings.unknown_error)
 
 
 @router.message(F.text == 'Взять корм')
 async def take_foods_bt(message: Message):
     if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
+        # todo: implement a system of taking food
         await message.answer('...меню выбора откуда...')
     else:
         await message.answer('Используйте кнопки!')
@@ -75,6 +79,7 @@ async def take_foods_bt(message: Message):
 @router.message(F.text == 'Реализовать корм')
 async def realise_foods_bt(message: Message):
     if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
+        # todo: implement a system of feed sales
         await message.answer('...меню введения количества и фотоотчета...')
     else:
         await message.answer('Используйте кнопки!')
@@ -83,6 +88,7 @@ async def realise_foods_bt(message: Message):
 @router.message(F.text == 'Передать корм')
 async def handover_foods_bt(message: Message):
     if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
+        # todo: implement a system of feed transfers
         await message.answer('...меню ввода количества, айди чела и фотоотчета...')
     else:
         await message.answer('Используйте кнопки!')
@@ -91,6 +97,7 @@ async def handover_foods_bt(message: Message):
 @router.message(F.text == 'Сдать на склад')
 async def put_away_bt(message: Message):
     if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
+        # todo: implement a system of delivery to the warehouse
         await message.answer('...меню ввода количества и фотоотчета...')
     else:
         await message.answer('Используйте кнопки!')
@@ -108,7 +115,7 @@ async def volunteer_profile_bt(message: Message):
 async def add_pet(callback: CallbackQuery):
     user_data = await dboperations.get_user_data(callback.from_user.id)
     if user_data[volunteers_indexes['state']] == "{volunteer_profile_menu}":
-        print(await dboperations.set_user_state(callback.from_user.id, '{add_pet_menu:type}'))
+        print(await dboperations.set_user_state(callback.from_user.id, '{add_pet_menu:pet_type}'))
         await callback.message.answer("Укажите, какого питомца вы хотите добавить:", reply_markup=reply_keys.cat_or_dog_key)
     else:
         await callback.answer('Сообщение больше не актуально, вернитесь в раздел карточки волонтёра.')
@@ -118,8 +125,8 @@ async def add_pet(callback: CallbackQuery):
 async def cat_or_dog(message: Message):
     global temp_data
     user_data = await dboperations.get_user_data(message.from_user.id)
-    if user_data[volunteers_indexes['state']] == "{add_pet_menu:type}":
-        temp_data['type'] = message.text
+    if user_data[volunteers_indexes['state']] == "{add_pet_menu:pet_type}":
+        temp_data['pet_type'] = message.text
         await dboperations.set_user_state(message.from_user.id, '{add_pet_menu:sex}')
         await message.answer('Укажите пол питомца', reply_markup=reply_keys.male_or_female_key)
     else:
@@ -169,6 +176,7 @@ async def moscow_or_mo(message: Message):
 @router.message(F.text == 'Список точек')
 async def points_list_bt(message: Message):
     if (await dboperations.get_user_data(message.from_user.id))[volunteers_indexes['state']] == '{main_menu}':
+        # todo: implement a system of nearest points
         await message.answer('...меню крайпака...')
     else:
         await message.answer('Используйте кнопки!')
@@ -205,7 +213,7 @@ async def another_message(message: Message):
     elif state[volunteers_indexes['state']] == "{add_pet_menu:name}":
         try:
             temp_data['name'] = message.text
-            new_pet = await dboperations.new_pet(message.from_user.id, temp_data['type'], temp_data['name'], temp_data['sex'], temp_data['sterialized'], message.from_user.id, temp_data['town'], temp_data['district'])
+            new_pet = await dboperations.new_pet(message.from_user.id, temp_data['pet_type'], temp_data['name'], temp_data['sex'], temp_data['sterialized'], message.from_user.id, temp_data['town'], temp_data['district'])
             if new_pet == 'Done':
                 temp_data = {
                     'district': 'None'
