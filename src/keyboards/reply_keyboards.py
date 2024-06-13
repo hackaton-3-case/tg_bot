@@ -15,6 +15,30 @@ main_key = ReplyKeyboardMarkup(keyboard=[
     resize_keyboard=True,
     input_field_placeholder="Главное меню:")
 
+admin_main_key = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Взять корм'), KeyboardButton(text='Реализовать корм'), KeyboardButton(text='Передать корм')],
+    [KeyboardButton(text='Сдать на склад')],
+    [KeyboardButton(text='Карточка волонтёра'), KeyboardButton(text='Список точек'), KeyboardButton(text='Админское меню')]
+    ],
+    resize_keyboard=True,
+    input_field_placeholder="Главное меню:"
+)
+
+admin_key = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Назначить админа точки'), KeyboardButton(text='Добавление точки')],
+    [KeyboardButton(text='Назначить старшего волонтёра'), KeyboardButton(text='Назначить админа бота')],
+    [KeyboardButton(text='Регистрация волонтёра'), KeyboardButton(text='Статистика')],
+    [KeyboardButton(text='выход')]
+    ],
+    resize_keyboard=True,
+    input_field_placeholder="Админское меню:"
+)
+
+all_good_or_not_key = ReplyKeyboardMarkup(keyboard=[
+    [KeyboardButton(text='Всё верно'), KeyboardButton(text='Нет, хочу изменить')]],
+    resize_keyboard=True
+)
+
 cat_or_dog_key = ReplyKeyboardMarkup(keyboard=[
     [KeyboardButton(text='кошка'), KeyboardButton(text='собака')],
     [KeyboardButton(text='выход')]],

@@ -1,6 +1,6 @@
 import json
 
-from src.data.config import url
+from tg_bot.src.data.config import url
 import asyncpg
 
 volunteers_indexes = {
@@ -16,7 +16,8 @@ volunteers_indexes = {
     'foods': 9,
     'realised': 10,
     'telegram_shortname': 11,
-    'pet_ids': 12
+    'pet_ids': 12,
+    'comment': 13
 }
 
 pets_indexes = {
@@ -31,8 +32,9 @@ pets_indexes = {
 }
 
 
-async def register_user(shortname, fio, phone, email, passport_data='нет информации'):
+async def register_user(shortname, fio, phone, email, comment='', passport_data='нет информации'):
     """
+    :param comment: user profile comment
     :param shortname: telegram shortname (link to profile)
     :param fio: full name
     :param phone: phone number
@@ -47,8 +49,8 @@ async def register_user(shortname, fio, phone, email, passport_data='нет ин
         json_realised = json.dumps({'cats_realised': 0, 'dogs_realised': 0})
         state = '{not_authorized}'
         pet_ids = '{}'
-        await conn.execute(f"INSERT INTO volunteers (telegram_id, fio, status, state, phone, email, passport_data, pets, foods, realised, telegram_shortname, pet_ids) "
-                           f"VALUES (0, '{fio}', 0, '{state}', '{phone}', '{email}', '{passport_data}', '{json_pets}', '{json_foods}', '{json_realised}', '{shortname}', '{pet_ids}')")
+        await conn.execute(f"INSERT INTO volunteers (telegram_id, fio, status, state, phone, email, passport_data, pets, foods, realised, telegram_shortname, pet_ids, comment) "
+                           f"VALUES (0, '{fio}', 0, '{state}', '{phone}', '{email}', '{passport_data}', '{json_pets}', '{json_foods}', '{json_realised}', '{shortname}', '{pet_ids}', '{comment}')")
         await conn.close()
         return [fio, f't.me/{shortname}']
     except Exception as e:
