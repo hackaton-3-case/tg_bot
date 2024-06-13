@@ -7,8 +7,13 @@ from model.dboperations import volunteers_indexes
 from keyboards import reply_keyboards as reply_keys
 from keyboards import inline_keyboards as inline_keys
 
+from src.utils.card_vol import draw_card
 
 async def main_menu(message):
+    """
+    :param message: telegram message to reply
+    :return: sends the user to the main menu
+    """
     user_data, state_change = await asyncio.gather(dboperations.get_user_data(message.from_user.id), dboperations.set_user_state(message.from_user.id, '{main_menu}'))
     if state_change == 'Done':
         await dboperations.set_user_state(message.from_user.id, '{main_menu}')
@@ -18,9 +23,17 @@ async def main_menu(message):
         await message.answer(f'Произошла неизвестная ошибка/вы не авторизованы в системе - напишите /start', reply_markup=types.ReplyKeyboardRemove())
 
 
-async def volunteer_profile(message):
+async def volunteer_profile(message) -> None:
+    """
+    :param message: telegram message to reply
+    :return: None
+    """
     user_data, state_change = await asyncio.gather(dboperations.get_user_data(message.from_user.id),
                                                    dboperations.set_user_state(message.from_user.id, '{volunteer_profile_menu}'))
+
+    # photo = await draw_card(user_data)
+    # todo: implement a system of drawing card vol
+
     if state_change == 'Done':
         pets = json.loads(user_data[volunteers_indexes['pets']])
         foods = json.loads(user_data[volunteers_indexes['foods']])
